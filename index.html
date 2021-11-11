@@ -22,9 +22,62 @@
             color: white;
             margin: 5px;
         }
+
+
+        .menu {
+            position: absolute;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 5px;
+            margin: 2px;
+            width: 20%;
+        }
+
+        .defaultGUI {
+            user-select: none;
+            display: block;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            width: 100%;
+            background: black;
+            color: white;
+            border: solid;
+            border-color: white;
+            border-radius: 5px;
+            border-width: 2px;
+            text-align: center;
+        }
+        
+        button.guiElement {
+            user-select: all;
+        }
+
+        label.defaultGUI {
+            border: none;
+        }
     </style>
 </head>
 <body>
+    <div class="menu">
+        <div class="defaultGUI">
+            <label for="autoStep" class="defaultGUI">Auto-Step</label>
+            <input type="checkbox" class="defaultGUI" id="autoStep">
+            <label for="autoStepInterval" class="defaultGUI">Auto-Step Interval (Seconds)</label>
+            <input type="number" class="defaultGUI" id="autoStepInterval" value="1">
+        </div>
+        <div class="defaultGUI">
+            <label for="gridWidth" class="defaultGUI">Grid Width</label>
+            <input type="number" class="defaultGUI" id="gridWidth" value="50">
+            <label for="gridHeight" class="defaultGUI">Grid Height</label>
+            <input type="number" class="defaultGUI" id="gridHeight" value="30">
+            <button class="defaultGUI" id="resetGrid">Reset Grid</button>
+        </div>
+        <div class="defaultGUI">
+            <label for="wrapGrid" class="defaultGUI">Wrap Grid</label>
+            <input type="checkbox" class="defaultGUI" id="wrapGrid" checked>
+        </div>
+    </div>
     <a class="repoRef" href="https://github.com/hds536jhmk/GameOfLife">Copyright (c) 2021 hds536jhmk</a>
 </body>
 </html>
