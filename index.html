@@ -49,22 +49,30 @@
             text-align: center;
         }
         
-        button.guiElement {
-            user-select: all;
+        button.defaultGUI:hover {
+            background-color: grey;
+        }
+        
+        button.defaultGUI:active {
+            background-color: black;
         }
 
         label.defaultGUI {
             border: none;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="menu">
+    <div class="menu" id="settings">
         <div class="defaultGUI">
-            <label for="autoStep" class="defaultGUI">Auto-Step</label>
-            <input type="checkbox" class="defaultGUI" id="autoStep">
-            <label for="autoStepInterval" class="defaultGUI">Auto-Step Interval (Seconds)</label>
-            <input type="number" class="defaultGUI" id="autoStepInterval" value="1">
+            <label for="autoTick" class="defaultGUI">Auto-Tick</label>
+            <input type="checkbox" class="defaultGUI" id="autoTick">
+            <label for="autoTickInterval" class="defaultGUI">Auto-Tick Interval (Seconds)</label>
+            <input type="number" class="defaultGUI" id="autoTickInterval" value="1">
         </div>
         <div class="defaultGUI">
             <label for="gridWidth" class="defaultGUI">Grid Width</label>

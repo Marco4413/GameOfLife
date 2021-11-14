@@ -1,151 +1,31 @@
 import { wCanvas, Color, UMath } from "./wCanvas/wcanvas.js";
+import * as Game from "./Game.js";
+
+const KEYS = {
+    "TOGGLE_GRID": "g",
+    "TOGGLE_MENU": "h",
+    "TICK": " "
+};
+
+/** @type {Game.GOLStyle} */
+const GOL_STYLE = {
+    "cellColors": { },
+    "gridColor": new Color("#555"),
+    "showGrid": true
+};
+
+GOL_STYLE.cellColors[Game.CELL_TYPES.DEAD_CELL] = null;
+GOL_STYLE.cellColors[Game.CELL_TYPES.LIVE_CELL] = new Color("#0f0");
 
 const BACKGROUND_COLOR = new Color("#000");
-const GRID_COLOR = new Color("#555");
-
-const DEAD_CELL = 0;
-const LIVE_CELL = 1;
-
-const CELL_COLORS = { }
-CELL_COLORS[DEAD_CELL] = null;
-CELL_COLORS[LIVE_CELL] = new Color("#0f0");
-
-let GRID_ORIGIN = new UMath.Vec2();
+let GAME_ORIGIN = new UMath.Vec2();
 let CELL_SIZE = 0;
 
-let wrapGrid = true;
+let GAME = new Game.GameOfLife(0, 0, false);
 
-/** @type {Number} */
-let gridWidth = 5;
-/** @type {Number} */
-let gridHeight = 5;
-/** @type {Number[]} */
-let grid;
-
-/**
- * @param {Number} size
- */
-const resetGrid = () => {
-    grid = [ ];
-    for (let i = 0; i < gridWidth * gridHeight; i++)
-        grid.push(DEAD_CELL);
-}
-
-/**
- * @param {Number} x
- * @param {Number} y
- * @returns {Number}
- */
-const getCellIndex = (x, y) => {
-    if (wrapGrid) {
-        const wrappedX = x % gridWidth;
-        const wrappedY = y % gridHeight;
-        return (wrappedX >= 0 ? wrappedX : ( gridWidth + wrappedX )) + (wrappedY >= 0 ? wrappedY : ( gridHeight + wrappedY )) * gridWidth;
-    } else {
-        if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight)
-            return -1;
-        return x + y * gridWidth;
-    }
-}
-
-/**
- * @param {Number} x
- * @param {Number} y
- * @returns {Number|undefined}
- */
-const getCell = (x, y) => {
-    const index = getCellIndex(x, y);
-    if (index < 0)
-        return undefined;
-    return grid[index];
-}
-
-/**
- * @param {Number} x
- * @param {Number} y
- * @param {Number} cellValue
- * @returns {Boolean}
- */
-const setCell = (x, y, cellValue) => {
-    const index = getCellIndex(x, y);
-    if (index < 0)
-        return false;
-    grid[getCellIndex(x, y)] = cellValue;
-    return true;
-}
-
-/**
- * @param {Number} x
- * @param {Number} y
- * @returns {Number[]}
- */
-const getSurroundingCells = (x, y) => {
-    const cells = [ ];
-    for (let relY = -1; relY <= 1; relY++) {
-        for (let relX = -1; relX <= 1; relX++) {
-            if (relX === 0 && relY === 0) continue;
-            const cell = getCell(x + relX, y + relY);
-            if (cell !== undefined)
-                cells.push(cell);
-        }
-    }
-    return cells;
-}
-
-const stepSimulation = () => {
-    let newGrid = grid.slice();
-    for (let y = 0; y < gridHeight; y++) {
-        for (let x = 0; x < gridWidth; x++) {
-            let cellIndex = getCellIndex(x, y);
-            if (cellIndex < 0) continue;
-            const cell = getCell(x, y);
-
-            const surroundingCells = getSurroundingCells(x, y);
-            let liveCells = 0;
-            for (let i = 0; i < surroundingCells.length; i++) {
-                if (surroundingCells[i] === LIVE_CELL)
-                    liveCells++;
-            }
-
-            if (cell === DEAD_CELL) {
-                if (liveCells === 3)
-                    newGrid[cellIndex] = LIVE_CELL;
-            } else if (cell === LIVE_CELL) {
-                if (liveCells < 2 || liveCells > 3)
-                    newGrid[cellIndex] = DEAD_CELL;
-                else newGrid[cellIndex] = LIVE_CELL;
-            }
-        }
-    }
-    grid = newGrid;
-}
-
-let timeSinceLastStep = 0;
-let autoStepInterval = 0;
-let autoStep = false;
-
-/**
- * @param {wCanvas} canvas
- * @param {Number} deltaTime
- */
-const drawGrid = (canvas, deltaTime) => {
-    canvas.stroke(GRID_COLOR);
-    for (let y = 0; y < gridHeight + 1; y++) {
-        const cY = GRID_ORIGIN.y + y * CELL_SIZE;
-        canvas.line(
-            GRID_ORIGIN.x, cY,
-            GRID_ORIGIN.x + gridWidth * CELL_SIZE, cY
-        );
-    }
-
-    for (let x = 0; x < gridWidth + 1; x++) {
-        const cX = GRID_ORIGIN.x + x * CELL_SIZE;
-        canvas.line(
-            cX, GRID_ORIGIN.y,
-            cX, GRID_ORIGIN.y + gridHeight * CELL_SIZE
-        );
-    }
-}
+let timeSinceLastTick = 0;
+let autoTickInterval = 0;
+let autoTick = false;
 
 /**
  * @param {wCanvas} canvas
@@ -154,119 +34,139 @@ const drawGrid = (canvas, deltaTime) => {
 const draw = (canvas, deltaTime) => {
     canvas.background(BACKGROUND_COLOR);
 
-    for (let y = 0; y < gridHeight; y++) {
-        for (let x = 0; x < gridWidth; x++) {
-            const cellValue = getCell(x, y);
-            const cellColor = CELL_COLORS[cellValue];
-            if (cellColor !== undefined && cellColor !== null) {
-                canvas.fill(cellColor);
-                canvas.rect(
-                    GRID_ORIGIN.x + x * CELL_SIZE,
-                    GRID_ORIGIN.y + y * CELL_SIZE,
-                    CELL_SIZE, CELL_SIZE,
-                    { "noFill": false, "noStroke": true }
-                );
-            }
-        }
-    }
+    GAME.Draw(canvas, deltaTime, GAME_ORIGIN, CELL_SIZE, GOL_STYLE);
 
-    drawGrid(canvas, deltaTime);
-
-    if (autoStep) {
-        timeSinceLastStep += deltaTime;
-        if (timeSinceLastStep >= autoStepInterval) {
-            stepSimulation();
-            timeSinceLastStep = 0;
+    if (autoTick) {
+        timeSinceLastTick += deltaTime;
+        if (timeSinceLastTick >= autoTickInterval) {
+            GAME.Tick();
+            timeSinceLastTick = 0;
         }
     }
 }
 
-window.addEventListener("load", () => {
-    const recalcGridSize = (canvas) => {
-        const canvasW = canvas.element.width;
-        const canvasH = canvas.element.height;
-        CELL_SIZE = Math.min(canvasW / gridWidth, canvasH / gridHeight);
+/**
+ * @param {String} elementID
+ * @param {(el: HTMLElement) => void} callback
+ */
+function wrapElementOnChange(elementID, callback) {
+    /** @type {HTMLElement} */
+    const element = document.getElementById(elementID);
+    element.addEventListener("change", () => {
+        callback(element);
+    });
+    callback(element);
+}
 
-        GRID_ORIGIN = new UMath.Vec2(
-            (canvasW - gridWidth  * CELL_SIZE) / 2,
-            (canvasH - gridHeight * CELL_SIZE) / 2
-        );
+const setCanvasCell = (cX, cY, cellValue) => {
+    if (GAME === undefined || GAME === null) {
+        console.error(`setCanvasCell on ${GAME} Game.`);
+        return false;
+    }
+    
+    const cellX = Math.floor((cX - GAME_ORIGIN.x) / CELL_SIZE);
+    const cellY = Math.floor((cY - GAME_ORIGIN.y) / CELL_SIZE);
+    return GAME.SetCell(cellX, cellY, cellValue);
+}
+
+const recalcGameCoords = (canvas) => {
+    if (GAME === undefined || GAME === null) {
+        console.error(`recalcGameCoords on ${GAME} Game.`);
+        return;
     }
 
+    const gridSize = GAME.GetGridSize();
+    
+    const canvasW = canvas.element.width;
+    const canvasH = canvas.element.height;
+    CELL_SIZE = Math.min(canvasW / gridSize.x, canvasH / gridSize.y);
+    GAME_ORIGIN = new UMath.Vec2(
+        (canvasW - gridSize.x * CELL_SIZE) / 2,
+        (canvasH - gridSize.y * CELL_SIZE) / 2
+    );
+}
 
-    resetGrid();
+const createGame = (w = undefined, h = undefined) => {
+    if (GAME === undefined || GAME === null) {
+        GAME = new Game.GameOfLife(0, 0, false);
+        return;
+    }
+
+    const currentSize = GAME.GetGridSize();
+    const isWrapping = GAME.wrapGrid;
+    GAME = new Game.GameOfLife(
+        w === undefined ? currentSize.x : w,
+        h === undefined ? currentSize.y : h,
+        isWrapping
+    );
+}
+
+window.addEventListener("load", () => {
     const canvas = new wCanvas({
         "onDraw": draw,
         "onResize": (canvas, canvasW, canvasH) => {
             canvas.element.width  = canvasW;
             canvas.element.height = canvasH;
-            recalcGridSize(canvas);
+            recalcGameCoords(canvas);
         }
     });
 
-    /** @type {HTMLInputElement} */
-    const elAutoStep = document.getElementById("autoStep");
-    autoStep = elAutoStep.checked;
-    elAutoStep.addEventListener("change", () => {
-        autoStep = elAutoStep.checked;
+    wrapElementOnChange("autoTick", (el) => {
+        autoTick = el.checked;
     });
 
-    /** @type {HTMLInputElement} */
-    const elAutoStepInterval = document.getElementById("autoStepInterval");
-    autoStepInterval = elAutoStepInterval.valueAsNumber;
-    elAutoStepInterval.addEventListener("change", () => {
-        if (!Number.isNaN(elAutoStepInterval.valueAsNumber)) {
-            autoStepInterval = elAutoStepInterval.valueAsNumber;
+    wrapElementOnChange("autoTickInterval", (el) => {
+        if (!Number.isNaN(el.valueAsNumber)) {
+            autoTickInterval = el.valueAsNumber;
         }
     });
 
-    /** @type {HTMLInputElement} */
-    const elGridWidth = document.getElementById("gridWidth");
-    gridWidth = elGridWidth.valueAsNumber;
-    elGridWidth.addEventListener("change", () => {
-        if (!Number.isNaN(elGridWidth.valueAsNumber)) {
-            gridWidth = Math.floor(elGridWidth.valueAsNumber);
-            resetGrid();
-            recalcGridSize(canvas);
+    wrapElementOnChange("gridWidth", (el) => {
+        if (!Number.isNaN(el.valueAsNumber)) {
+            const newWidth = Math.floor(el.valueAsNumber);
+            createGame(newWidth, undefined);
+            recalcGameCoords(canvas);
         }
     });
 
-    /** @type {HTMLInputElement} */
-    const elGridHeight = document.getElementById("gridHeight");
-    gridHeight = elGridHeight.valueAsNumber;
-    elGridHeight.addEventListener("change", () => {
-        if (!Number.isNaN(elGridHeight.valueAsNumber)) {
-            gridHeight = Math.floor(elGridHeight.valueAsNumber);
-            resetGrid();
-            recalcGridSize(canvas);
+    wrapElementOnChange("gridHeight", (el) => {
+        if (!Number.isNaN(el.valueAsNumber)) {
+            const newHeight = Math.floor(el.valueAsNumber);
+            createGame(undefined, newHeight);
+            recalcGameCoords(canvas);
         }
     });
 
-    document.getElementById("resetGrid").addEventListener("click", resetGrid);
+    document.getElementById("resetGrid").addEventListener("click", () => GAME.ClearGrid());
 
-    /** @type {HTMLInputElement} */
-    const elWrapGrid = document.getElementById("wrapGrid");
-    wrapGrid = elWrapGrid.checked;
-    elWrapGrid.addEventListener("change", () => {
-        wrapGrid = elWrapGrid.checked;
+    wrapElementOnChange("wrapGrid", (el) => {
+        GAME.wrapGrid = el.checked;
     });
 
-    resetGrid();
-    recalcGridSize(canvas);
-
-    const setCanvasCell = (cX, cY, cell) => {
-        const cellX = Math.floor((cX - GRID_ORIGIN.x) / CELL_SIZE);
-        const cellY = Math.floor((cY - GRID_ORIGIN.y) / CELL_SIZE);
-        setCell(cellX, cellY, cell);
-    }
+    recalcGameCoords(canvas);
 
     canvas.element.addEventListener("mousedown", ev => {
-        setCanvasCell(ev.x, ev.y, ev.ctrlKey ? DEAD_CELL : LIVE_CELL);
+        setCanvasCell(ev.x, ev.y, ev.ctrlKey ? Game.CELL_TYPES.DEAD_CELL : Game.CELL_TYPES.LIVE_CELL);
     });
 
     canvas.element.addEventListener("mousemove", ev => {
         if (ev.buttons === 1) {
-            setCanvasCell(ev.x, ev.y, ev.ctrlKey ? DEAD_CELL : LIVE_CELL);
+            setCanvasCell(ev.x, ev.y, ev.ctrlKey ? Game.CELL_TYPES.DEAD_CELL : Game.CELL_TYPES.LIVE_CELL);
+        }
+    });
+
+    const settingsMenu = document.getElementById("settings");
+    document.addEventListener("keydown", (ev) => {
+        switch (ev.key) {
+            case KEYS.TOGGLE_MENU:
+                settingsMenu.classList.toggle("hidden");
+                break;
+            case KEYS.TOGGLE_GRID:
+                GOL_STYLE.showGrid = !GOL_STYLE.showGrid;
+                break;
+            case KEYS.TICK:
+                GAME.Tick();
+                break;
         }
     });
 });
