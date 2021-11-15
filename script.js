@@ -48,6 +48,7 @@ const draw = (canvas, deltaTime) => {
 /**
  * @param {String} elementID
  * @param {(el: HTMLElement) => void} callback
+ * @returns {HTMLElement?}
  */
 function wrapElementOnChange(elementID, callback) {
     /** @type {HTMLElement} */
@@ -56,6 +57,7 @@ function wrapElementOnChange(elementID, callback) {
         callback(element);
     });
     callback(element);
+    return element;
 }
 
 const setCanvasCell = (cX, cY, cellValue) => {
@@ -157,7 +159,7 @@ window.addEventListener("load", () => {
 
     const settingsMenu = document.getElementById("settings");
     document.addEventListener("keydown", (ev) => {
-        switch (ev.key) {
+        switch (ev.key.toLowerCase()) {
             case KEYS.TOGGLE_MENU:
                 settingsMenu.classList.toggle("hidden");
                 break;
