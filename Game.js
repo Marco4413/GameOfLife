@@ -1,11 +1,15 @@
 import { wCanvas, UMath, Color } from "./wCanvas/wcanvas.js";
 
+/**
+ * All Possible Cell Types
+ */
 export const CELL_TYPES = {
     "DEAD_CELL": 0,
     "LIVE_CELL": 1
 };
 
 /**
+ * The style used to draw a GameOfLife instance with
  * @typedef {Object} GOLStyle
  * @property {Object} cellColors
  * @property {Color} gridColor
@@ -14,9 +18,9 @@ export const CELL_TYPES = {
 
 export class GameOfLife {
     /**
-     * @param {Number} width
-     * @param {Number} height
-     * @param {Boolean} wrapGrid
+     * @param {Number} width The width of the Game's Grid
+     * @param {Number} height The height of the Game's Grid
+     * @param {Boolean} wrapGrid Whether or not to wrap the grid's coordinates
      */
     constructor(width, height, wrapGrid) {
         this._size = new UMath.Vec2(width, height);
@@ -28,7 +32,7 @@ export class GameOfLife {
     }
 
     /**
-     * @param {Number} size
+     * Clears the Game's Grid
      */
     ClearGrid() {
         this._grid = [ ];
@@ -37,6 +41,10 @@ export class GameOfLife {
             this._grid.push(CELL_TYPES.DEAD_CELL);
     }
 
+    /**
+     * Returns a copy of the Game's Grid
+     * @returns {UMath.Vec2} The Size of the Game's Grid
+     */
     GetGridSize() {
         return this._size.copy();
     }
@@ -46,7 +54,7 @@ export class GameOfLife {
      * @param {Number} y
      * @returns {Number}
      */
-    GetCellIndex(x, y) {
+    _GetCellIndex(x, y) {
         if (this.wrapGrid) {
             const wrappedX = x % this._size.x;
             const wrappedY = y % this._size.y;
@@ -59,25 +67,27 @@ export class GameOfLife {
     }
     
     /**
-     * @param {Number} x
-     * @param {Number} y
-     * @returns {Number|undefined}
+     * Returns the Game's Cell at pos x, y in the Game's Grid
+     * @param {Number} x The x of the cell
+     * @param {Number} y The y of the cell
+     * @returns {Number|undefined} The value of the cell or undefined if not present
      */
     GetCell(x, y) {
-        const index = this.GetCellIndex(x, y);
+        const index = this._GetCellIndex(x, y);
         if (index < 0)
             return undefined;
         return this._grid[index];
     }
     
     /**
-     * @param {Number} x
-     * @param {Number} y
-     * @param {Number} cellValue
-     * @returns {Boolean}
+     * Sets the Game's Cell at pos x, y in the Game's Grid to the value specified
+     * @param {Number} x The x of the cell to set
+     * @param {Number} y The y of the cell to set
+     * @param {Number} cellValue The new value of the specified cell
+     * @returns {Boolean} Whether or not a cell was affected
      */
     SetCell(x, y, cellValue) {
-        const index = this.GetCellIndex(x, y);
+        const index = this._GetCellIndex(x, y);
         if (index < 0)
             return false;
         this._grid[index] = cellValue;
@@ -85,9 +95,10 @@ export class GameOfLife {
     }
     
     /**
-     * @param {Number} x
-     * @param {Number} y
-     * @returns {Number[]}
+     * Returns the Cells Surrounding the one specified
+     * @param {Number} x The x pos of the cell to get the surrounding ones from
+     * @param {Number} y The y pos of the cell to get the surrounding ones from
+     * @returns {Number[]} The values of the surrounding cells
      */
     GetSurroundingCells(x, y) {
         const cells = [ ];
@@ -102,11 +113,14 @@ export class GameOfLife {
         return cells;
     }
     
+    /**
+     * Ticks the Game's Grid Once
+     */
     Tick() {
         let newGrid = this._grid.slice();
         for (let y = 0; y < this._size.y; y++) {
             for (let x = 0; x < this._size.x; x++) {
-                let cellIndex = this.GetCellIndex(x, y);
+                let cellIndex = this._GetCellIndex(x, y);
                 if (cellIndex < 0) continue;
                 const cell = this.GetCell(x, y);
     
@@ -137,7 +151,7 @@ export class GameOfLife {
      * @param {Number} cellSize
      * @param {GOLStyle} style
      */
-    DrawGrid(canvas, deltaTime, origin, cellSize, style) {
+    _DrawGrid(canvas, deltaTime, origin, cellSize, style) {
         canvas.stroke(style.gridColor);
         for (let y = 1; y < this._size.y; y++) {
             const cY = origin.y + y * cellSize;
@@ -163,7 +177,7 @@ export class GameOfLife {
      * @param {Number} cellSize
      * @param {GOLStyle} style
      */
-    DrawBorder(canvas, deltaTime, origin, cellSize, style) {
+    _DrawBorder(canvas, deltaTime, origin, cellSize, style) {
         canvas.stroke(style.gridColor);
 
         const gridWidth  = this._size.x * cellSize;
@@ -191,11 +205,12 @@ export class GameOfLife {
     }
 
     /**
-     * @param {wCanvas} canvas
+     * Draws the Game to the Specified Canvas
+     * @param {wCanvas} canvas The canvas to draw to
      * @param {Number} deltaTime
-     * @param {UMath.Vec2} origin
-     * @param {Number} cellSize
-     * @param {GOLStyle} style
+     * @param {UMath.Vec2} origin The origin at which to start Drawing the Game from
+     * @param {Number} cellSize The size of the Game's Cells
+     * @param {GOLStyle} style The style to use to Draw the Game
      */
     Draw(canvas, deltaTime, origin, cellSize, style) {
         for (let y = 0; y < this._size.y; y++) {
@@ -215,7 +230,7 @@ export class GameOfLife {
         }
 
         if (style.showGrid)
-            this.DrawGrid(canvas, deltaTime, origin, cellSize, style);
-        this.DrawBorder(canvas, deltaTime, origin, cellSize, style);
+            this._DrawGrid(canvas, deltaTime, origin, cellSize, style);
+        this._DrawBorder(canvas, deltaTime, origin, cellSize, style);
     }
 }
